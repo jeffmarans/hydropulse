@@ -44,7 +44,7 @@ HYDROPULSE_OTEL_TOKEN=your-token
 
 # Grafana Alloy Configuration
 HYDROPULSE_ALLOY_ENDPOINT=https://your-alloy-instance.com/v1/traces
-HYDROPULSE_ALLOY_TOKEN=your-alloy-api-token
+HYDROPULSE_ALLOY_TOKEN=your-alloy-api-token  # Optional: only if authentication is required
 
 # Optional Configuration
 HYDROPULSE_DEBUG=false
@@ -105,17 +105,42 @@ Grafana Alloy is a vendor-neutral distribution of the OpenTelemetry Collector. T
 
 1. **Set up your Alloy instance** following the [Grafana Alloy documentation](https://grafana.com/docs/alloy/)
 
-2. **Configure the environment variables:**
+2. **For internal/private installations (no authentication required):**
 ```bash
 HYDROPULSE_PROVIDER=alloy  # or 'auto' for automatic fallback
-HYDROPULSE_ALLOY_ENDPOINT=https://your-alloy-instance.com/v1/traces
-HYDROPULSE_ALLOY_TOKEN=your-alloy-api-token  # Optional, if authentication is required
+HYDROPULSE_ALLOY_ENDPOINT=http://your-internal-alloy:12345/v1/traces
+# No token needed for internal installations
 ```
 
-3. **Programmatic configuration** (alternative to environment variables):
+3. **For cloud/authenticated installations:**
+```bash
+HYDROPULSE_PROVIDER=alloy  
+HYDROPULSE_ALLOY_ENDPOINT=https://your-alloy-instance.com/v1/traces
+HYDROPULSE_ALLOY_TOKEN=your-alloy-api-token
+```
+
+4. **Programmatic configuration** (alternative to environment variables):
 ```typescript
 import { TelemetryModule } from 'hydropulse';
 
+// Internal installation (no auth)
+@Module({
+  imports: [
+    TelemetryModule.forRoot({
+      provider: 'alloy',
+      serviceName: 'my-app',
+      serviceVersion: '1.0.0',
+      environment: 'production',
+      alloy: {
+        endpoint: 'http://alloy.internal:12345/v1/traces'
+        // No headers needed for internal installations
+      }
+    }),
+  ],
+})
+export class AppModule {}
+
+// Cloud installation (with auth)
 @Module({
   imports: [
     TelemetryModule.forRoot({
@@ -144,11 +169,54 @@ When using `HYDROPULSE_PROVIDER=auto`, Hydropulse will try providers in this ord
 
 ### Alloy Endpoint Examples
 
-Common Alloy endpoint patterns:
-- **Local Alloy**: `http://localhost:12345/v1/traces`
+**Internal/Private installations (no authentication):**
+- **Local development**: `http://localhost:12345/v1/traces`
+- **Docker Compose**: `http://alloy:12345/v1/traces`
+- **Kubernetes**: `http://alloy-service.monitoring.svc.cluster.local:12345/v1/traces`
+- **Internal network**: `http://alloy.internal.company.com:12345/v1/traces`
+
+**Cloud/Authenticated installations:**
 - **Grafana Cloud**: `https://alloy-prod-us-central-0.grafana.net/v1/traces`
-- **Self-hosted**: `https://alloy.your-domain.com/v1/traces`
-- **Docker**: `http://alloy:12345/v1/traces` (container name)
+- **Self-hosted HTTPS**: `https://alloy.your-domain.com/v1/traces`
+- **Load balanced**: `https://alloy-lb.company.com/v1/traces`
+
+### Docker & Kubernetes Configuration
+
+**Docker Compose example:**
+```yaml
+# docker-compose.yml
+services:
+  app:
+    image: my-app:latest
+    environment:
+      - HYDROPULSE_PROVIDER=alloy
+      - HYDROPULSE_ALLOY_ENDPOINT=http://alloy:12345/v1/traces
+      - HYDROPULSE_SERVICE_NAME=my-app
+      - HYDROPULSE_SERVICE_VERSION=1.0.0
+    depends_on:
+      - alloy
+
+  alloy:
+    image: grafana/alloy:latest
+    ports:
+      - "12345:12345"
+    volumes:
+      - ./alloy.yml:/etc/alloy/config.alloy
+```
+
+**Kubernetes ConfigMap example:**
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hydropulse-config
+data:
+  HYDROPULSE_PROVIDER: "alloy"
+  HYDROPULSE_ALLOY_ENDPOINT: "http://alloy-service.monitoring.svc.cluster.local:12345/v1/traces"
+  HYDROPULSE_SERVICE_NAME: "my-app"
+  HYDROPULSE_SERVICE_VERSION: "1.0.0"
+  HYDROPULSE_ENVIRONMENT: "production"
+```
 
 ### Visual Status Output
 
@@ -170,25 +238,41 @@ If you're having trouble connecting to Alloy:
 
 1. **Verify endpoint URL**: Make sure your Alloy instance is running and accessible
 ```bash
+# For internal installations (no auth)
+curl -X POST http://your-alloy-instance.com:12345/v1/traces \
+  -H "Content-Type: application/json" \
+  -d '{"test": "connection"}'
+
+# For cloud installations (with auth)
 curl -X POST https://your-alloy-instance.com/v1/traces \
   -H "Content-Type: application/json" \
   -d '{"test": "connection"}'
 ```
 
-2. **Check authentication**: If using tokens, ensure they're correctly configured
+2. **Test authentication** (only for cloud/authenticated installations):
 ```bash
-# Test with authentication
+# Test with authentication token
 curl -X POST https://your-alloy-instance.com/v1/traces \
   -H "Authorization: Bearer your-alloy-api-token" \
   -H "Content-Type: application/json"
 ```
 
-3. **Enable debug mode** to see detailed logs:
+3. **For internal installations**, ensure network connectivity:
+```bash
+# Test basic connectivity
+ping alloy.internal.company.com
+telnet alloy.internal.company.com 12345
+
+# Test HTTP endpoint
+curl http://alloy.internal.company.com:12345/health
+```
+
+4. **Enable debug mode** to see detailed logs:
 ```bash
 HYDROPULSE_DEBUG=true
 ```
 
-4. **Common Alloy ports**:
+5. **Common Alloy ports**:
    - HTTP: `12345` (default)
    - HTTPS: `443`
    - gRPC: `4317`
