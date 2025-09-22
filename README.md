@@ -17,7 +17,7 @@ A robust Node.js telemetry library for NestJS and React applications, utilizing 
 ### Installation
 
 ```bash
-npm install @jeffmarans/hydropulse
+npm install hydropulse
 ```
 
 ### Environment Variables Setup
@@ -30,7 +30,7 @@ HYDROPULSE_SERVICE_NAME=my-app
 HYDROPULSE_SERVICE_VERSION=1.0.0
 
 # Provider Configuration
-HYDROPULSE_PROVIDER=auto
+HYDROPULSE_PROVIDER=auto  # Options: auto, grafana, opentelemetry, alloy
 HYDROPULSE_ENVIRONMENT=production
 
 # Grafana Configuration
@@ -41,12 +41,27 @@ HYDROPULSE_GRAFANA_APP_KEY=my-app
 # OpenTelemetry Configuration
 HYDROPULSE_OTEL_ENDPOINT=https://your-otel-collector.com
 HYDROPULSE_OTEL_TOKEN=your-token
+
+# Grafana Alloy Configuration
+HYDROPULSE_ALLOY_ENDPOINT=https://your-alloy-instance.com/v1/traces
+HYDROPULSE_ALLOY_TOKEN=your-alloy-api-token
+
+# Optional Configuration
+HYDROPULSE_DEBUG=false
+HYDROPULSE_SAMPLING_RATE=1.0
+HYDROPULSE_BATCH_SIZE=1000
+HYDROPULSE_BATCH_DELAY=5000
+HYDROPULSE_CIRCUIT_BREAKER_THRESHOLD=5
+HYDROPULSE_CIRCUIT_BREAKER_TIMEOUT=60000
+HYDROPULSE_RETRY_MAX_ATTEMPTS=3
+HYDROPULSE_RETRY_INITIAL_DELAY=1000
+HYDROPULSE_SANITIZE_PII=true
 ```
 
 ### NestJS Usage
 
 ```typescript
-import { TelemetryModule } from '@jeffmarans/hydropulse';
+import { TelemetryModule } from 'hydropulse';
 
 @Module({
   imports: [
@@ -59,7 +74,7 @@ export class AppModule {}
 ### React Usage
 
 ```tsx
-import { ReactTelemetryProvider, useMetric } from '@jeffmarans/hydropulse';
+import { ReactTelemetryProvider, useMetric } from 'hydropulse';
 
 function App() {
   return (
@@ -80,6 +95,61 @@ function Dashboard() {
 }
 ```
 
+## Provider Configuration
+
+Hydropulse supports multiple telemetry providers. You can configure them using environment variables or programmatically.
+
+### Grafana Alloy Configuration
+
+Grafana Alloy is a vendor-neutral distribution of the OpenTelemetry Collector. To use Alloy:
+
+1. **Set up your Alloy instance** following the [Grafana Alloy documentation](https://grafana.com/docs/alloy/)
+
+2. **Configure the environment variables:**
+```bash
+HYDROPULSE_PROVIDER=alloy  # or 'auto' for automatic fallback
+HYDROPULSE_ALLOY_ENDPOINT=https://your-alloy-instance.com/v1/traces
+HYDROPULSE_ALLOY_TOKEN=your-alloy-api-token  # Optional, if authentication is required
+```
+
+3. **Programmatic configuration** (alternative to environment variables):
+```typescript
+import { TelemetryModule } from 'hydropulse';
+
+@Module({
+  imports: [
+    TelemetryModule.forRoot({
+      provider: 'alloy',
+      serviceName: 'my-app',
+      serviceVersion: '1.0.0',
+      environment: 'production',
+      alloy: {
+        endpoint: 'https://your-alloy-instance.com/v1/traces',
+        headers: {
+          'Authorization': 'Bearer your-alloy-api-token'
+        }
+      }
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+### Provider Priority
+
+When using `HYDROPULSE_PROVIDER=auto`, Hydropulse will try providers in this order:
+1. **Grafana** (if `HYDROPULSE_GRAFANA_URL` is configured)
+2. **Alloy** (if `HYDROPULSE_ALLOY_ENDPOINT` is configured)  
+3. **OpenTelemetry** (if `HYDROPULSE_OTEL_ENDPOINT` is configured)
+
+### Alloy Endpoint Examples
+
+Common Alloy endpoint patterns:
+- **Local Alloy**: `http://localhost:12345/v1/traces`
+- **Grafana Cloud**: `https://alloy-prod-us-central-0.grafana.net/v1/traces`
+- **Self-hosted**: `https://alloy.your-domain.com/v1/traces`
+- **Docker**: `http://alloy:12345/v1/traces` (container name)
+
 ### Visual Status Output
 
 When Hydropulse initializes, you'll see a beautiful status display:
@@ -90,6 +160,45 @@ When Hydropulse initializes, you'll see a beautiful status display:
 💧 Flow: Optimal (1000 metrics/s)
 ⚡ Pressure: Normal (CPU: 23%, Memory: 45%)
 ✅ All systems flowing smoothly
+```
+
+## Troubleshooting
+
+### Alloy Connection Issues
+
+If you're having trouble connecting to Alloy:
+
+1. **Verify endpoint URL**: Make sure your Alloy instance is running and accessible
+```bash
+curl -X POST https://your-alloy-instance.com/v1/traces \
+  -H "Content-Type: application/json" \
+  -d '{"test": "connection"}'
+```
+
+2. **Check authentication**: If using tokens, ensure they're correctly configured
+```bash
+# Test with authentication
+curl -X POST https://your-alloy-instance.com/v1/traces \
+  -H "Authorization: Bearer your-alloy-api-token" \
+  -H "Content-Type: application/json"
+```
+
+3. **Enable debug mode** to see detailed logs:
+```bash
+HYDROPULSE_DEBUG=true
+```
+
+4. **Common Alloy ports**:
+   - HTTP: `12345` (default)
+   - HTTPS: `443`
+   - gRPC: `4317`
+
+### Debug Environment Variables
+
+Enable verbose logging to troubleshoot issues:
+```bash
+HYDROPULSE_DEBUG=true
+HYDROPULSE_PROVIDER=alloy  # Force specific provider
 ```
 
 ## Test Coverage
@@ -113,15 +222,42 @@ When Hydropulse initializes, you'll see a beautiful status display:
 ## Architecture
 
 ```
-telemetry-lib/
+hydropulse/
 ├── src/
 │   ├── core/              # Core telemetry services
-│   ├── providers/         # Grafana & OpenTelemetry providers
-│   ├── adapters/          # NestJS & React adapters
+│   ├── providers/         # Provider implementations
+│   │   ├── grafana/       # Grafana Faro integration
+│   │   ├── alloy/         # Grafana Alloy integration  
+│   │   └── opentelemetry/ # OpenTelemetry integration
+│   ├── adapters/          # Framework adapters
+│   │   ├── nestjs/        # NestJS decorators & modules
+│   │   └── react/         # React hooks & providers
 │   └── interfaces/        # TypeScript interfaces
 ├── examples/              # Functional examples
 ├── docs/                  # Complete documentation
 └── config/                # Environment configurations
+```
+
+### Provider Flow
+
+```mermaid
+graph TD
+    A[Hydropulse] --> B{Provider Selection}
+    B -->|auto| C[Try Grafana]
+    B -->|alloy| D[Alloy Provider]
+    B -->|grafana| E[Grafana Provider]
+    B -->|opentelemetry| F[OpenTelemetry Provider]
+    
+    C -->|success| E
+    C -->|fail| G[Try Alloy]
+    G -->|success| D
+    G -->|fail| H[Try OpenTelemetry]
+    H -->|success| F
+    H -->|fail| I[Fallback Mode]
+    
+    D --> J[Grafana Alloy Collector]
+    E --> K[Grafana Cloud/On-Premise]
+    F --> L[OpenTelemetry Collector]
 ```
 
 ## Contributing

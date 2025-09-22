@@ -72,7 +72,7 @@ function App() {
           borderTop: '1px solid #e1e5e9',
           marginTop: '3rem'
         }}>
-          <p>React Hydropulse Example - Built with @jeffmarans/hydropulse</p>
+          <p>React Hydropulse Example - Built with hydropulse</p>
         </footer>
       </div>
     </Router>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useMetric, useTrace, withTelemetry, TelemetryButton, TelemetryForm } from '@jeffmarans/hydropulse';
+import { useMetric, useTrace, withTelemetry, TelemetryButton, TelemetryForm } from 'hydropulse';
 
 interface FormData {
   name: string;

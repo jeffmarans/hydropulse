@@ -10,17 +10,17 @@
 
 ### NPM
 ```bash
-npm install @jeffmarans/hydropulse
+npm install hydropulse
 ```
 
 ### Yarn
 ```bash
-yarn add @jeffmarans/hydropulse
+yarn add hydropulse
 ```
 
 ### PNPM
 ```bash
-pnpm add @jeffmarans/hydropulse
+pnpm add hydropulse
 ```
 
 ## Peer Dependencies
@@ -45,7 +45,7 @@ npm install react react-dom
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { TelemetryModule } from '@jeffmarans/hydropulse';
+import { TelemetryModule } from 'hydropulse';
 
 @Module({
   imports: [
@@ -75,7 +75,7 @@ export class AppModule {}
 
 ```typescript
 import { Controller, Get } from '@nestjs/common';
-import { TrackMetric, TrackTrace } from '@jeffmarans/hydropulse';
+import { TrackMetric, TrackTrace } from 'hydropulse';
 
 @Controller('users')
 export class UsersController {
@@ -95,7 +95,7 @@ export class UsersController {
 ```typescript
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { TelemetryProvider } from '@jeffmarans/hydropulse';
+import { TelemetryProvider } from 'hydropulse';
 import App from './App';
 
 const telemetryConfig = {
@@ -131,7 +131,7 @@ root.render(
 
 ```typescript
 import React from 'react';
-import { useMetric, useTrace, useError } from '@jeffmarans/hydropulse';
+import { useMetric, useTrace, useError } from 'hydropulse';
 
 function MyComponent() {
   const { recordMetric } = useMetric();
@@ -212,7 +212,7 @@ NODE_ENV=production
 npm test
 
 # Check if the library can be imported
-node -e "console.log(require('@jeffmarans/hydropulse'))"
+node -e "console.log(require('hydropulse'))"
 ```
 
 ### Test NestJS Integration

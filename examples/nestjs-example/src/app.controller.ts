@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Param, Query, HttpException, HttpStatus } from '@nestjs/common';
-import { TrackMetric, TrackTrace } from '@jeffmarans/hydropulse';
+import { TrackMetric, TrackTrace } from 'hydropulse';
 import { AppService } from './app.service';
 
 @Controller()

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useMetric, useTrace, useTelemetryContext } from '@jeffmarans/hydropulse';
+import { useMetric, useTrace, useTelemetryContext } from 'hydropulse';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 interface MetricData {

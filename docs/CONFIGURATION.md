@@ -533,7 +533,7 @@ const productionConfig: TelemetryConfig = {
 ### Environment-Based Loading
 
 ```typescript
-import { TelemetryConfig } from '@jeffmarans/hydropulse';
+import { TelemetryConfig } from 'hydropulse';
 
 const loadConfig = (): TelemetryConfig => {
   const env = process.env.NODE_ENV || 'development';
@@ -560,7 +560,7 @@ export const telemetryConfig = loadConfig();
 ### Configuration Validation
 
 ```typescript
-import { validateTelemetryConfig } from '@jeffmarans/hydropulse';
+import { validateTelemetryConfig } from 'hydropulse';
 
 const config = loadConfig();
 

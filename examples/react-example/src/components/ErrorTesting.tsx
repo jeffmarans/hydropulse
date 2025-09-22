@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useError, useMetric, useTrace } from '@jeffmarans/hydropulse';
+import { useError, useMetric, useTrace } from 'hydropulse';
 
 interface ErrorLog {
   timestamp: string;

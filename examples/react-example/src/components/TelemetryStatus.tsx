@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useTelemetryContext, useMetric } from '@jeffmarans/hydropulse';
+import { useTelemetryContext, useMetric } from 'hydropulse';
 
 interface TelemetryStats {
   totalMetrics: number;

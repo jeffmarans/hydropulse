@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
-import { TelemetryProvider } from '@jeffmarans/hydropulse';
+import { TelemetryProvider } from 'hydropulse';
 
 const telemetryConfig = {
   provider: 'auto' as const,

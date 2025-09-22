@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useMetric, useTrace, withTelemetry } from '@jeffmarans/hydropulse';
+import { useMetric, useTrace, withTelemetry } from 'hydropulse';
 
 interface PerformanceMetrics {
   renderTime: number;

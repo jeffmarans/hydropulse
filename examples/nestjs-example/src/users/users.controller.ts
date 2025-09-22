@@ -10,7 +10,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-import { TrackMetric, TrackTrace } from '@jeffmarans/hydropulse';
+import { TrackMetric, TrackTrace } from 'hydropulse';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
