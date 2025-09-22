@@ -1,0 +1,143 @@
+version: '3.8'
+
+services:
+  # Application
+  todo-app:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=todoapp
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - HYDROPULSE_SERVICE_NAME=todo-observability-demo
+      - HYDROPULSE_SERVICE_VERSION=1.0.0
+      - HYDROPULSE_ENVIRONMENT=production
+      - HYDROPULSE_PROVIDER=alloy
+      - HYDROPULSE_ALLOY_ENDPOINT=http://alloy:4318
+      - HYDROPULSE_DEBUG=true
+    depends_on:
+      - postgres
+      - alloy
+    networks:
+      - observability
+
+  # Database
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=todoapp
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - observability
+
+  # Grafana Alloy (OTEL Collector)
+  alloy:
+    image: grafana/alloy:latest
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "12345:12345" # Alloy UI
+    volumes:
+      - ./config/alloy.yml:/etc/alloy/config.alloy
+    command: run --config.file=/etc/alloy/config.alloy --storage.path=/tmp/alloy
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    networks:
+      - observability
+
+  # Prometheus (Metrics)
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - observability
+
+  # Loki (Logs)
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./config/loki.yml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - observability
+
+  # Tempo (Traces)
+  tempo:
+    image: grafana/tempo:latest
+    ports:
+      - "3200:3200"
+      - "14268:14268"
+    volumes:
+      - ./config/tempo.yml:/etc/tempo/tempo.yml
+      - tempo_data:/tmp/tempo
+    command: -config.file=/etc/tempo/tempo.yml
+    networks:
+      - observability
+
+  # Pyroscope (Profiling)
+  pyroscope:
+    image: grafana/pyroscope:latest
+    ports:
+      - "4040:4040"
+    volumes:
+      - pyroscope_data:/var/lib/pyroscope
+    networks:
+      - observability
+
+  # Grafana (Dashboards)
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./config/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./dashboards:/var/lib/grafana/dashboards
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+      - pyroscope
+    networks:
+      - observability
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  loki_data:
+  tempo_data:
+  pyroscope_data:
+  grafana_data:
+
+networks:
+  observability:
+    driver: bridge
